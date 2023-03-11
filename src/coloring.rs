@@ -7,7 +7,8 @@ use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
 
-use petgraph::graph::{NodeIndex, UnGraph};
+use petgraph::Undirected;
+use petgraph::graph::{NodeIndex, UnGraph, Graph};
 
 use std::cmp::Ordering;
 
@@ -106,6 +107,10 @@ impl Colouring {
     /// a single node
     pub fn is_discrete(&self) -> bool {
         return self.cells.len() == self.size;
+    }
+
+    pub fn get_cell_count(&self) -> usize {
+        return self.cells.len();
     }
 
     /// TODO : delete
@@ -419,8 +424,8 @@ impl Colouring {
         panic!("select_cell called on a discrete coloring");
     }
 
-    /// Generate the canonical labelling
-    pub fn compute_canonical<N, E>(&self, g : &UnGraph<N, E>) -> UnGraph<usize, ()> {
+    /// Generate the desriptor associated to the colouring
+    pub fn compute_graph_from_discrete(&self, g : &Graph<usize, (), Undirected>) -> Graph<usize, (), Undirected> {
 
         assert!(self.is_discrete());
 
@@ -434,7 +439,7 @@ impl Colouring {
         let mut g = UnGraph::<usize, ()>::new_undirected();
         
         g.reserve_nodes(self.size);
-        (0..self.size).for_each(|i| { g.add_node(i); });
+        (0..self.size).for_each(|_| { g.add_node(1); });
         
         g.reserve_edges(edges.len());
         edges.into_iter().for_each(|(u, v)| { g.add_edge(NodeIndex::new(u), NodeIndex::new(v), ()); });
@@ -443,23 +448,25 @@ impl Colouring {
     }
 }
 
+
+
+
+
+
+
+
+
+
+ 
+
+
 /// K-dim coloring (see TODO)
-/// use std::cmp::Ordering;
-
-//
-// Kdim
-//
-
-#[derive(Debug, Eq)]
+#[derive(Debug, Eq, Clone)]
 pub struct Kdim (usize, Vec<usize>);
 
 impl Kdim {
     pub fn new(u : usize, v : Vec<usize>) -> Kdim {
         Kdim(u, v)
-    }
-
-    pub fn clone(&self) -> Kdim {
-        Kdim(self.0, self.1.clone())
     }
 }
 
@@ -486,3 +493,9 @@ impl PartialEq for Kdim {
         return self.1 == other.1;
     }
 }
+
+
+
+
+
+
