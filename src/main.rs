@@ -7,17 +7,23 @@ use petgraph::algo::is_isomorphic;
 use graphkey::GraphKey;
 use std::time::Instant;
 
+use std::collections::HashSet;
+
 fn main() {
 
     // let g1 = gen_test_graph();
-    let g1 = generate_random_graph(100, 0.1);
+    let g1 = generate_random_graph(3000, 0.1);
     let g2 = generate_permutated_graph(&g1);
 
     let start = Instant::now();
     let key1 = GraphKey::new(&g1);
-    let key2 = GraphKey::new(&g1);
+    let key2 = GraphKey::new(&g2);
     let are_isomorphic_graphkey = key1 == key2;
     let duration_graphkey = start.elapsed();
+
+    let start = Instant::now();
+    let _ = key1 == key2;
+    let duration_check = start.elapsed();
 
     let start = Instant::now();
     let are_isomorphic_petgraph = is_isomorphic(&g1, &g2);
@@ -25,8 +31,26 @@ fn main() {
 
     println!("Isomorphis check with petgraph : {} ({:?})", are_isomorphic_petgraph, duration_petgraph);
     println!("Isomorphis check with graphkey : {} ({:?})", are_isomorphic_graphkey, duration_graphkey);
+    println!("Check of key1 == key2 ({:?})", duration_check);
+    println!("Len(key) = {}", key1.get_descriptor().len());
+
+    let g1 = generate_random_graph(1000, 0.1);
+    let g2 = generate_random_graph(1000, 0.1);
+    let g3 = generate_permutated_graph(&g1);
+    let g4 = generate_permutated_graph(&g2);
+
+    let mut m = HashSet::new();
+
+    m.insert(GraphKey::new(&g1));
+    m.insert(GraphKey::new(&g2));
+    m.insert(GraphKey::new(&g3));
+    m.insert(GraphKey::new(&g4));
+
+    println!("m.len() = {}", m.len());
+
 }
 
+#[allow(dead_code)]
 fn gen_test_graph() -> Graph::<usize, (), Undirected> {
     
     let edges : Vec<(u32, u32)> = vec![
@@ -40,8 +64,6 @@ fn gen_test_graph() -> Graph::<usize, (), Undirected> {
 
     return UnGraph::from_edges(edges);
 }
-
-
 
 fn generate_random_graph(n : usize, p : f64) -> Graph::<usize, (), Undirected> {
 
