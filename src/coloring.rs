@@ -3,10 +3,6 @@ use std::collections::HashSet;
 use std::collections::BinaryHeap;
 use std::cmp::Reverse;
 
-use std::cell::RefCell;
-use std::ops::Deref;
-use std::rc::Rc;
-
 use petgraph::Undirected;
 use petgraph::graph::{NodeIndex, UnGraph, Graph};
 
@@ -16,7 +12,7 @@ use std::cmp::Ordering;
 ///
 /// Example : Cell{ color : 0, members : { 0, 1, 2 } }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Cell {
     color : usize,
     members : HashSet<usize>,
@@ -31,16 +27,19 @@ struct Cell {
 /// 
 /// At the start of the algorithm, all nodes are colored with the same color.
 /// 
-/// size : node count
+/// size : node count of the graph
 /// cells[k] : k-th Cell object
 /// color_cell[c] : pointer to the cell of color c
 /// node_cell[n] : pointer to the cell of the node n
 /// node_color[n] = color of the node n
+/// 
+
+#[derive(Clone)]
 pub struct Colouring {
     size : usize,
-    cells : Vec<Rc<RefCell<Cell>>>,                         
-    color_cell : HashMap<usize, Rc<RefCell<Cell>>>, 
-    node_cell : Vec<Rc<RefCell<Cell>>>,
+    cells : Vec<Cell>,
+    color_cell : HashMap<usize, usize>, 
+    node_cell : Vec<usize>,
     node_color : Vec<usize>,
 }
 
@@ -51,55 +50,13 @@ impl Colouring {
 
         let size = g.node_count();
         let cell_0 = Cell { color: 0, members : HashSet::from_iter(0..size) };
-        let p = Rc::new(RefCell::new(cell_0));
-
+        
         Colouring {
             size : size,
-            cells: vec![ Rc::clone(&p) ],
-            color_cell: HashMap::from([ (0, Rc::clone(&p) ) ]),
-            node_cell : vec![ Rc::clone(&p) ; size ],
+            cells: vec![ cell_0 ],
+            color_cell: HashMap::from([ (0, 0) ]),
+            node_cell : vec![ 0 ; size ],
             node_color : vec![ 0; size ],
-        }
-    }
-
-    /// Clone the given colouring
-    /// 
-    /// The complete clone of a colouring is required along the exploration of
-    ///   
-    pub fn clone(&self) -> Colouring {
-
-        let mut new_cells = Vec::new();
-        let mut new_color_cell = HashMap::new();
-        let mut new_node_cell_map = HashMap::new();
-        let mut new_node_color = vec![0;self.size];
-
-        for i in 0..self.cells.len() {
-
-            let _c = (*self.cells[i]).borrow();
-            let new_cell = Cell{ color: _c.color, members: _c.members.clone() };
-            let new_cell = Rc::new(RefCell::new(new_cell));
-
-            new_cells.push(Rc::clone(&new_cell));
-            new_color_cell.insert(_c.color, Rc::clone(&new_cell));
-
-            for k in _c.members.iter() {
-                new_node_cell_map.insert(*k, Rc::clone(&new_cell));
-                new_node_color[*k] = _c.color;
-            }
-        }
-
-        let mut new_node_cell = Vec::new();
-
-        for i in 0..self.size {
-            new_node_cell.push(new_node_cell_map.remove(&i).unwrap());
-        }
-
-        return Colouring {
-            size: self.size, 
-            cells: new_cells, 
-            color_cell: new_color_cell,
-            node_cell: new_node_cell, 
-            node_color: new_node_color
         }
     }
 
@@ -115,13 +72,13 @@ impl Colouring {
 
     /// TODO : delete
     pub fn get_cell_members(&self, idx : usize) -> Vec<usize> {
-        return (*self.cells[idx]).borrow().members.iter().map(|x| *x ).collect()
+        return self.cells[idx].members.iter().map(|x| *x ).collect()
     }
 
     /// TODO : delete
     pub fn print_cells(&self) {
         for i in 0..self.cells.len() { 
-            print!(" ({})-{:?}", self.cells[i].as_ref().borrow().color, self.cells[i].as_ref().borrow().members);
+            print!(" ({})-{:?}", self.cells[i].color, self.cells[i].members);
         }
     }
 
@@ -130,14 +87,14 @@ impl Colouring {
 
         println!("Cells : ");
         for i in 0..self.cells.len() { 
-            print!("Cell {} (color = {}): ", i,  self.cells[i].as_ref().borrow().color);
-            println!("{:?}", self.cells[i].as_ref().borrow().members);
+            print!("Cell {} (color = {}): ", i,  self.cells[i].color);
+            println!("{:?}", self.cells[i].members);
         }
         println!("");
         
         println!("Cells by colors : ");
         for (k, c) in self.color_cell.iter() {
-            println!("Cell of color {} (color = {}): ", k,  c.as_ref().borrow().color);
+            println!("Cell of color {} (color = {}): ", k,  self.cells[*c].color);
         }
         println!("{:?}", self.node_color);
         println!("");
@@ -148,33 +105,12 @@ impl Colouring {
 
         println!("Node cells : ");
         for (i, c) in self.node_cell.iter().enumerate() {
-            println!("Node {} : color {}", i, c.as_ref().borrow().color);
+            println!("Node {} : color {}", i, self.cells[*c].color);
         }
 
         println!("");
         println!("");
         
-    }
-
-    /// Returns the index of the cell of color c.
-    /// 
-    /// This index is difficult to keep updated during the optimization, as
-    /// splitting a cell c increases all the indexes of cells above c. 
-    /// Moreover, the cell index in only needed for the target cell selection
-    /// method. Therefore, it seems better to compute the index of the cell in
-    /// O(log(N)) time.
-    pub fn get_color_index(&self, c : usize) -> usize {
-        
-        let (mut i, mut j) = (0, self.cells.len());
-        if self.cells[0].deref().borrow().color == c { return 0 }
-        
-        loop {
-            let k = (i + j) / 2;
-            let _c = self.cells[k].deref().borrow().color;
-            if  _c == c { return k }
-            else if _c > c { j = k; }
-            else { i = k; }
-        }
     }
 
     /// Individualize the node n in the cell of index cell_idx
@@ -183,17 +119,19 @@ impl Colouring {
     pub fn individualize(&mut self, cell_idx : usize, node : usize) -> usize {
         
         // check if the len of the cell is > 1
-        assert!(1 < (*self.cells[cell_idx]).borrow().members.len());
+        assert!(1 < self.cells[cell_idx].members.len());
 
-        let old_color = (*self.cells[cell_idx]).borrow().color;
-        let new_cell = Rc::new(RefCell::new(Cell{ 
+        let new_cell_index = self.cells.len();
+
+        let old_color = self.cells[cell_idx].color;
+        let new_cell = Cell{ 
             color : old_color, 
             members : HashSet::from([node])
-        }));
+        };
 
         // Edit the old cell
         {
-            let mut old_cell = (*self.cells[cell_idx]).borrow_mut();
+            let mut old_cell = &mut self.cells[cell_idx];
             old_cell.members.remove(&node);
             old_cell.color = old_color+1;
             for u in old_cell.members.iter() {
@@ -202,16 +140,16 @@ impl Colouring {
         }
         
         // Edit self.cells
-        self.cells.insert(cell_idx, Rc::clone(&new_cell));
+        self.cells.push(new_cell);
 
-        // Edit self.cell_color
-        if let Some(v) = self.color_cell.remove(&old_color) {
-            self.color_cell.insert(old_color+1, v);
+        // Edit self.color_cell
+        if let Some(old_cell_index) = self.color_cell.remove(&old_color) {
+            self.color_cell.insert(old_color+1, old_cell_index);
         }
-        self.color_cell.insert(old_color, Rc::clone(&new_cell));
+        self.color_cell.insert(old_color, new_cell_index);
 
         // Edit self.node_cell
-        self.node_cell[node] = Rc::clone(&new_cell);
+        self.node_cell[node] = new_cell_index;
 
         return old_color+1;
 
@@ -219,24 +157,26 @@ impl Colouring {
 
     /// Split the cell into two cells, such that the first one contains
     /// the nodes in new_members
-    pub fn split_cell(&mut self, cell_idx : usize, new_members : Vec<usize>) {
+    pub fn split_cell(&mut self, cell_idx : usize, new_members : Vec<usize>) -> usize {
         
-        let old_color = (*self.cells[cell_idx]).borrow().color;
+        let old_color = self.cells[cell_idx].color;
         let new_color = old_color + new_members.len();
+        let new_cell_index = self.cells.len();
 
         // Generate the new cell
-        let new_cell = Rc::new(RefCell::new(Cell{ 
+        let new_cell = Cell{ 
             color : old_color, 
             members : HashSet::from_iter(new_members.clone())
-        }));
+        };
 
         // Edit the old cell
         {
-            let mut old_cell = (*self.cells[cell_idx]).borrow_mut();
+            let mut old_cell = &mut self.cells[cell_idx];
 
             for u in new_members.iter() {
                 old_cell.members.remove(&u);
             }
+
             let new_color = old_cell.color + new_members.len();
             old_cell.color = new_color; 
 
@@ -246,19 +186,20 @@ impl Colouring {
         }
 
         // Edit self.cells
-        self.cells.insert(cell_idx, Rc::clone(&new_cell));
+        self.cells.push(new_cell);
 
         // Edit self.cell_color
         if let Some(v) = self.color_cell.remove(&old_color) {
             self.color_cell.insert(new_color, v);
         }
-        self.color_cell.insert(old_color, Rc::clone(&new_cell));
+        self.color_cell.insert(old_color, new_cell_index);
 
         // Edit self.node_cell
         for u in new_members {
-            self.node_cell[u] = Rc::clone(&new_cell);
+            self.node_cell[u] = new_cell_index;
         }
 
+        return new_color
     }
 
     /// Refine a Colouring according to the graph g.
@@ -271,10 +212,9 @@ impl Colouring {
     /// 
     pub fn refine<N, E>(&mut self, g : &UnGraph<N, E>) -> Vec<usize>
     {
-    
-    if self.is_discrete() {
-        return vec![];
-    }
+        if self.is_discrete() {
+            return vec![];
+        }
 
         let mut trace = Vec::new();
 
@@ -317,7 +257,7 @@ impl Colouring {
             // Fill the degree map
             // In brackets in order to drom the Cell after iteration
             {
-                let studied_cell = self.color_cell.get(&studied_color).unwrap().deref().borrow();
+                let studied_cell = &self.cells[*self.color_cell.get(&studied_color).unwrap()];
                 for u in studied_cell.members.iter() {
                     for v in g.neighbors( NodeIndex::new(*u) ) {
                         degrees.entry(v.index()).and_modify(|counter| *counter += 1).or_insert(1);
@@ -332,31 +272,36 @@ impl Colouring {
 
             for _color in visited_cells {
                 
+                let _cell_idx = *self.color_cell.get(&_color).unwrap();
+
                 // Do not process if cell is singleton                
-                if (*(*self.color_cell.get(&_color).unwrap())).borrow().members.len() == 1 {
+                if self.cells[_cell_idx].members.len() == 1 {
                     continue;
                 }
 
-                let mut _cell_idx = self.get_color_index(_color);
-
                 // Get cell subset according to degree
 
-                let c1 = self.color_cell.get(&_color).unwrap();
+
                 let mut splits : HashMap<usize, Vec<usize>> = HashMap::new();
 
-                for u in c1.deref().borrow().members.iter() {
+                {
+                    let c1 = &self.cells[_cell_idx];
                     
-                    let _d = match degrees.get(u) {
-                        None => { 0 },
-                        Some(n) => { *n }
-                    };
+                    for u in c1.members.iter() {
+                        
+                        let _d = match degrees.get(u) {
+                            None => { 0 },
+                            Some(n) => { *n }
+                        };
 
-                    if let Some(m) = splits.get_mut(&_d) { 
-                        m.push(*u);
-                    } else {
-                        splits.insert(_d, vec![*u] );
+                        if let Some(m) = splits.get_mut(&_d) { 
+                            m.push(*u);
+                        } else {
+                            splits.insert(_d, vec![*u] );
+                        }
                     }
                 }
+                
 
                 // Do not split the cell if no degree difference
                 if splits.len() == 1 { continue; }
@@ -373,24 +318,20 @@ impl Colouring {
                     // Split cell
                     let h = splits.remove(&_d).unwrap();
                     // let h_len = h.len();
-                    self.split_cell(_cell_idx, h);
+                    let new_color = self.split_cell(_cell_idx, h);
                     
                     // Add new cell to uncounted
-                    let new_c = (*self.cells[_cell_idx]).borrow().color;
-                    uncounted_colors.push(Reverse(new_c));    
+                    uncounted_colors.push(Reverse(new_color));    
                     
                     // update trace
-                    trace.push((*self.cells[_cell_idx+1]).borrow().color);
-
-                    // update cell index 
-                    _cell_idx += 1;
+                    trace.push(new_color);
                 }
 
                 // Add the last cell to uncounted
                 {
                     let h = splits.remove(&last_degree).unwrap();
                     if h.len() > 1 {
-                        let new_c = (*self.cells[_cell_idx]).borrow().color;
+                        let new_c = self.cells[_cell_idx].color;
                         uncounted_colors.push(Reverse(new_c));    
                     }
                 }
@@ -407,7 +348,7 @@ impl Colouring {
     pub fn select_cell_v1(&self) -> usize {
         
         for i in 0..self.cells.len() {
-            if (*self.cells[i]).borrow().members.len() > 1 {
+            if self.cells[i].members.len() > 1 {
                 return i;
             }
         }
@@ -428,7 +369,7 @@ impl Colouring {
             .collect();
         
         let mut g = UnGraph::<usize, ()>::new_undirected();
-        
+         
         g.reserve_nodes(self.size);
         (0..self.size).for_each(|_| { g.add_node(1); });
         

@@ -15,7 +15,7 @@ fn main() {
     env::set_var("RUST_BACKTRACE", "1");
 
     // let g1 = gen_test_graph();
-    let g1 = generate_random_graph(1000, 0.1);
+    let g1 = generate_random_graph(100, 0.1);
     let g2 = generate_permutated_graph(&g1);
 
     let start = Instant::now();
@@ -25,32 +25,11 @@ fn main() {
     let duration_graphkey = start.elapsed();
 
     let start = Instant::now();
-    let _ = key1 == key2;
-    let duration_check = start.elapsed();
-
-    let start = Instant::now();
     let are_isomorphic_petgraph = is_isomorphic(&g1, &g2);
     let duration_petgraph = start.elapsed();
 
     println!("Isomorphis check with petgraph : {} ({:?})", are_isomorphic_petgraph, duration_petgraph);
     println!("Isomorphis check with graphkey : {} ({:?})", are_isomorphic_graphkey, duration_graphkey);
-    println!("Check of key1 == key2 ({:?})", duration_check);
-    println!("Len(key) = {}", key1.get_descriptor().len());
-
-    let g1 = generate_random_graph(5000, 0.1);
-    let g2 = generate_random_graph(5000, 0.1);
-    let g3 = generate_permutated_graph(&g1);
-    let g4 = generate_permutated_graph(&g2);
-
-    let mut m = HashSet::new();
-
-    m.insert(GraphKey::new(&g1));
-    m.insert(GraphKey::new(&g2));
-    m.insert(GraphKey::new(&g3));
-    m.insert(GraphKey::new(&g4));
-
-    println!("m.len() = {}", m.len());
-
 }
 
 #[allow(dead_code)]
@@ -76,7 +55,7 @@ fn generate_random_graph(n : usize, p : f64) -> Graph::<usize, (), Undirected> {
 
     let mut g = UnGraph::<usize, ()>::new_undirected();
         
-    g.reserve_nodes(n);
+    g.reserve_nodes(n); 
     (0..n).for_each(|i| { g.add_node(i); });
     
     for i in 0..n {
