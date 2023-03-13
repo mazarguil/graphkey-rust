@@ -221,12 +221,6 @@ impl Colouring {
     /// the nodes in new_members
     pub fn split_cell(&mut self, cell_idx : usize, new_members : Vec<usize>) {
         
-        // TODO : delete
-        assert!(new_members.len() > 0);                                                                                                         // check 
-        assert!(cell_idx < self.cells.len());
-        assert!((*self.cells[cell_idx]).borrow().members.len() > new_members.len());                                                            // check if removing less nodes than the cell
-        assert!((*self.cells[cell_idx]).borrow().members.iter().all(|x| { self.node_color[*x] == (*self.cells[cell_idx]).borrow().color }) );   // check if removed nodes are in the cell
-        
         let old_color = (*self.cells[cell_idx]).borrow().color;
         let new_color = old_color + new_members.len();
 
@@ -277,8 +271,10 @@ impl Colouring {
     /// 
     pub fn refine<N, E>(&mut self, g : &UnGraph<N, E>) -> Vec<usize>
     {
-        // TODO : delete
-        assert!( !self.is_discrete() );
+    
+    if self.is_discrete() {
+        return vec![];
+    }
 
         let mut trace = Vec::new();
 
@@ -383,11 +379,6 @@ impl Colouring {
                     let new_c = (*self.cells[_cell_idx]).borrow().color;
                     uncounted_colors.push(Reverse(new_c));    
                     
-                    // TODO : check if better
-                    // if h_len > 1 {
-                    //    uncounted_colors.push(Reverse(new_c));    
-                    //}
-
                     // update trace
                     trace.push((*self.cells[_cell_idx+1]).borrow().color);
 
