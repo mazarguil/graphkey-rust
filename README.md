@@ -2,7 +2,7 @@
 An implementation of the Traces algorithm in Rust to enable fast graph isomorphish check and the Hash trait on Graph objects. For a complete description of the algorithm, see [this publication](https://arxiv.org/pdf/0804.4881.pdf).
 
 ## Usage
-Given a graph (from the awesome petgraph library), this algorithm computes the key of the graph. This key is isomorphic-invariant, hence it can be hashed & used for isomorphism test.
+Given a graph (from the awesome petgraph library), this algorithm computes the key associated to the graph. This key is isomorphic-invariant, hence it can be hashed & used for isomorphism test.
 
 ```rust
 use petgraph::{Graph, graph::Undirected};
@@ -22,7 +22,7 @@ fn main() {
 ```
 
 ## Isomorphism check
-The resulting key is stable by permutation, and thus can be used for an isomorphism check.
+The resulting key is stable by permutation, thus two keys can be compared in order to perform isomorphism check.
 
 ```rust
 fn main() {
@@ -82,7 +82,7 @@ fn main() {
 
 ## Performence of the isomorphism check against petgraph::algo::is_isomorphic
 
-For large graphs (n > 1_000), the key comparison allows to perform an isomorphism check faster than with the algorithm provided currently in petgraph. In particular, it can handle large graphs graphs ( > 10_000 nodes) which is not possible with petgraph::algo::is_isomorphic.
+For large graphs (n > 1_000), the key comparison allows to perform an isomorphism check faster than with the algorithm provided currently in petgraph. In particular, it can handle large graphs ( > 10_000 nodes) which is not possible with petgraph::algo::is_isomorphic.
 
 ```rust
 fn main() {
