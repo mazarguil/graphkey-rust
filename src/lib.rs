@@ -1,4 +1,4 @@
-use petgraph::visit::{NodeCompactIndexable, IntoNeighbors, IntoEdges, EdgeRef};
+use petgraph::visit::{NodeCompactIndexable, IntoNeighbors, IntoEdges};
 use crate::coloring::{Colouring, Kdim};
 
 pub mod coloring;
@@ -13,7 +13,7 @@ pub struct GraphKey(Vec<usize>);
 
 impl GraphKey {
     pub fn get_descriptor(&self) -> &Vec<usize> {
-        return &self.0
+        &self.0
     }
 }
 
@@ -43,7 +43,7 @@ impl GraphKey {
             TreeNode{
                 c : gc,
                 target_cell: target,
-                children : children,
+                children,
                 son_in_exp_path: None,
                 son_k_dim : None,
             }
@@ -70,8 +70,6 @@ impl GraphKey {
 
             for node in current_list.into_iter() {
 
-                // node.c.print_cells();
-
                 let mut node = node;
 
                 // Add son in exploration to next_list (losing ownership)
@@ -88,13 +86,13 @@ impl GraphKey {
                     node.son_in_exp_path = None;             
                 }
 
-                while node.children.len() > 0 {
+                while !node.children.is_empty() {
 
                     // Create new TreeNode from the individualization of a (graph) node from the target cell
                     let _v = node.children.pop().unwrap();
                     let mut _gc = node.c.clone();
                     let new_color = _gc.individualize(node.target_cell, _v);
-                    let mut trace = _gc.refine(&g);
+                    let mut trace = _gc.refine(g);
                     trace.insert(0, new_color);
                     let mut k_dim = Kdim::new(_gc.get_cell_count(), trace);
 
@@ -131,11 +129,12 @@ impl GraphKey {
                         }
                         
                         let target = _gc.select_cell_v1();
-                        let mut children = _gc.get_cell_members(target);
-                        children.sort_by(|a, b| b.cmp(a));             // TODO : delete
+                        let children = _gc.get_cell_members(target);
+                        // children.sort_by(|a, b| b.cmp(a));             // TODO : delete
                         let mut new_experimental_path_node = TreeNode{ 
-                            c : _gc, target_cell: 
-                            target, children : children, 
+                            c : _gc, 
+                            target_cell: target, 
+                            children, 
                             son_in_exp_path: None, 
                             son_k_dim : Some(k_dim)
                         };
@@ -143,7 +142,7 @@ impl GraphKey {
                         let _v = new_experimental_path_node.children.pop().unwrap();
                         _gc = new_experimental_path_node.c.clone();
                         let new_color = _gc.individualize(new_experimental_path_node.target_cell, _v);
-                        let mut trace = _gc.refine(&g);
+                        let mut trace = _gc.refine(g);
                         trace.insert(0, new_color);
                         k_dim = Kdim::new(_gc.get_cell_count(), trace);
 
@@ -161,18 +160,18 @@ impl GraphKey {
             }
         }
 
-        let canonical = next_list[0].c.compute_graph_from_discrete(&g);
+        let canonical = next_list[0].c.compute_graph_from_discrete(g);
         let mut best_descriptor = compute_descriptor(&canonical);
 
         for leaf in next_list.into_iter().skip(1) {
-            let _canonical = leaf.c.compute_graph_from_discrete(&g);
+            let _canonical = leaf.c.compute_graph_from_discrete(g);
             let _descriptor = compute_descriptor(&_canonical);
             if _descriptor > best_descriptor {
                 best_descriptor = _descriptor;
             }
         }
 
-        return GraphKey(best_descriptor);
+        GraphKey(best_descriptor)
     }
 }
 
@@ -205,7 +204,7 @@ where
         canonical.push(n);
     }
     
-    return canonical
+    canonical
 }
 
 //
@@ -230,7 +229,7 @@ mod tests {
             (5, 8), (7, 9)
         ];
     
-        return UnGraph::from_edges(edges);
+        UnGraph::from_edges(edges)
     }
 
     
@@ -249,7 +248,7 @@ mod tests {
             }
         }
 
-        return g
+        g
     }
 
     
@@ -276,7 +275,7 @@ mod tests {
         g.reserve_edges(edges.len());
         edges.into_iter().for_each(|(u, v)| { g.add_edge(NodeIndex::new(u), NodeIndex::new(v), ()); });
 
-        return g
+        g
     }
 
 
@@ -348,6 +347,4 @@ mod tests {
             assert_eq!(key1, key3);
         }
     }
-
-
 }

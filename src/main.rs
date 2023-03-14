@@ -12,7 +12,6 @@ fn main() {
     use std::env;
     env::set_var("RUST_BACKTRACE", "1");
 
-    // let g1 = gen_test_graph();
     let g1 = generate_random_graph(4000, 0.1);
     let g2 = generate_permutated_graph(&g1);
 
@@ -26,8 +25,8 @@ fn main() {
     let are_isomorphic_petgraph = is_isomorphic(&g1, &g2);
     let duration_petgraph = start.elapsed();
 
-    println!("Isomorphis check with petgraph : {} ({:?})", are_isomorphic_petgraph, duration_petgraph);
-    println!("Isomorphis check with graphkey : {} ({:?})", are_isomorphic_graphkey, duration_graphkey);
+    println!("Isomorphis check with petgraph : {are_isomorphic_petgraph} ({duration_petgraph:?})");
+    println!("Isomorphis check with graphkey : {are_isomorphic_graphkey} ({duration_graphkey:?})");
 }
 
 #[allow(dead_code)]
@@ -42,7 +41,7 @@ fn gen_test_graph() -> Graph::<usize, (), Undirected> {
         (5, 8), (7, 9)
     ];
 
-    return UnGraph::from_edges(edges);
+    UnGraph::from_edges(edges)
 }
 
 fn generate_random_graph(n : usize, p : f64) -> Graph::<usize, (), Undirected> {
@@ -58,13 +57,13 @@ fn generate_random_graph(n : usize, p : f64) -> Graph::<usize, (), Undirected> {
     
     for i in 0..n {
         for j in (i+1)..n {
-            if rng.gen_range((0.)..(1.)) < p {
+            if rng.gen_range((0.)..1.) < p {
                 g.add_edge(NodeIndex::new(i), NodeIndex::new(j), ());
             }
         }
     }
 
-    return g
+    g
 }
 
 
@@ -95,7 +94,6 @@ fn generate_permutated_graph(g : &Graph::<usize, (), Undirected>) -> Graph::<usi
     let mut rng = thread_rng();
     perm.shuffle(&mut rng);
 
-    
     let edges : Vec<(usize, usize)> = g.edge_indices()
     .map(|e| { 
         let (u, v) = g.edge_endpoints(e).unwrap();
@@ -111,5 +109,5 @@ fn generate_permutated_graph(g : &Graph::<usize, (), Undirected>) -> Graph::<usi
     _g.reserve_edges(edges.len());
     edges.into_iter().for_each(|(u, v)| { _g.add_edge(NodeIndex::new(u), NodeIndex::new(v), ()); });
 
-    return _g
+    _g
 }

@@ -57,7 +57,7 @@ impl Colouring {
         let cell_0 = Cell { color: 0, members : HashSet::from_iter(0..size) };
         
         Colouring {
-            size : size,
+            size,
             cells: vec![ cell_0 ],
             color_cell: HashMap::from([ (0, 0) ]),
             node_cell : vec![ 0 ; size ],
@@ -68,16 +68,15 @@ impl Colouring {
     /// Checks if the colouring is discrete, i.e. each color is associated to
     /// a single node
     pub fn is_discrete(&self) -> bool {
-        return self.cells.len() == self.size;
+        self.cells.len() == self.size
     }
 
     pub fn get_cell_count(&self) -> usize {
-        return self.cells.len();
+        self.cells.len()
     }
 
-    /// TODO : delete
     pub fn get_cell_members(&self, idx : usize) -> Vec<usize> {
-        return self.cells[idx].members.iter().map(|x| *x ).collect()
+        self.cells[idx].members.iter().copied().collect()
     }
 
     /// TODO : delete
@@ -95,27 +94,23 @@ impl Colouring {
             print!("Cell {} (color = {}): ", i,  self.cells[i].color);
             println!("{:?}", self.cells[i].members);
         }
-        println!("");
+        println!();
         
         println!("Cells by colors : ");
         for (k, c) in self.color_cell.iter() {
             println!("Cell of color {} (color = {}): ", k,  self.cells[*c].color);
         }
         println!("{:?}", self.node_color);
-        println!("");
+        println!();
 
         println!("Node colors : ");
         println!("{:?}", self.node_color);
-        println!("");
+        println!();
 
         println!("Node cells : ");
         for (i, c) in self.node_cell.iter().enumerate() {
             println!("Node {} : color {}", i, self.cells[*c].color);
         }
-
-        println!("");
-        println!("");
-        
     }
 
     /// Individualize the node n in the cell of index cell_idx
@@ -156,7 +151,7 @@ impl Colouring {
         // Edit self.node_cell
         self.node_cell[node] = new_cell_index;
 
-        return old_color+1;
+        old_color + 1
 
     }
 
@@ -179,7 +174,7 @@ impl Colouring {
             let mut old_cell = &mut self.cells[cell_idx];
 
             for u in new_members.iter() {
-                old_cell.members.remove(&u);
+                old_cell.members.remove(u);
             }
 
             let new_color = old_cell.color + new_members.len();
@@ -204,7 +199,7 @@ impl Colouring {
             self.node_cell[u] = new_cell_index;
         }
 
-        return new_color
+        new_color
     }
 
     /// Refine a Colouring according to the graph g.
@@ -240,17 +235,13 @@ impl Colouring {
             let studied_color = uncounted_colors.pop();
 
             // break condition            
-            if studied_color == None { break; }
+            if studied_color.is_none() { break; }
             let Reverse(studied_color) = studied_color.unwrap();
             
             // remove potential duplicates
-            loop {
-                if let Some(_next) = uncounted_colors.peek() {
-                    if _next.0 == studied_color {
-                        uncounted_colors.pop();
-                    } else {
-                        break;
-                    }
+            while let Some(_next) = uncounted_colors.peek() {
+                if _next.0 == studied_color {
+                    uncounted_colors.pop();
                 } else {
                     break;
                 }
@@ -345,7 +336,7 @@ impl Colouring {
             } 
         }
 
-        return trace;
+        trace
     }
 
     //
@@ -385,7 +376,7 @@ impl Colouring {
         _g.reserve_edges(edges.len());
         edges.into_iter().for_each(|(u, v)| { _g.add_edge(NodeIndex::new(u), NodeIndex::new(v), ()); });
         
-        return _g
+        _g
     }
 }
 
@@ -416,7 +407,7 @@ impl Ord for Kdim {
     fn cmp(&self, other: &Self) -> Ordering {
         if self.0 > other.0 { return Ordering::Greater; }
         if self.0 < other.0 { return Ordering::Less; }
-        return self.1.cmp(&other.1).reverse();
+        self.1.cmp(&other.1).reverse()
     }
 }
 
@@ -431,7 +422,7 @@ impl PartialEq for Kdim {
         if self.0 != other.0 {
             return false
         }
-        return self.1 == other.1;
+        self.1 == other.1
     }
 }
 

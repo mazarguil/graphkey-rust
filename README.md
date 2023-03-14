@@ -142,7 +142,7 @@ fn generate_permutated_graph(g : &Graph::<usize, (), Undirected>) -> Graph::<usi
     g.reserve_edges(edges.len());
     edges.into_iter().for_each(|(u, v)| { g.add_edge(NodeIndex::new(u), NodeIndex::new(v), ()); });
 
-    return g
+    g
 }
 
 fn generate_random_graph(n : usize, p : f64) -> Graph::<usize, (), Undirected> {
@@ -161,7 +161,7 @@ fn generate_random_graph(n : usize, p : f64) -> Graph::<usize, (), Undirected> {
         }
     }
     
-    return g
+    g
 }
 ```
 
