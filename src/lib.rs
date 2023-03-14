@@ -1,4 +1,4 @@
-use petgraph::{graph::Graph, Undirected};
+use petgraph::visit::{NodeCompactIndexable, IntoNeighbors, IntoEdges, EdgeRef};
 use crate::coloring::{Colouring, Kdim};
 
 pub mod coloring;
@@ -18,7 +18,10 @@ impl GraphKey {
 }
 
 impl GraphKey {
-    pub fn new(g : &Graph::<usize, (), Undirected>) -> GraphKey {
+    pub fn new<G>(g : G) -> GraphKey 
+    where
+        G : NodeCompactIndexable + IntoNeighbors + IntoEdges
+    {
 
         // Generate first colouring & first refine.
         let mut gc = Colouring::new(g);
@@ -158,8 +161,6 @@ impl GraphKey {
             }
         }
 
-        // println!("Final leaf count = {}", next_list.len());
-
         let canonical = next_list[0].c.compute_graph_from_discrete(&g);
         let mut best_descriptor = compute_descriptor(&canonical);
 
@@ -185,23 +186,26 @@ struct TreeNode {
     son_k_dim : Option<Kdim>,
 }
 
-fn compute_descriptor(g : &Graph<usize, (), Undirected>) -> Vec<usize> {
+fn compute_descriptor<G>(g : G) -> Vec<usize>
+where
+    G : NodeCompactIndexable + IntoNeighbors + IntoEdges
+{
     let n = g.node_count();
-    let mut cononical = vec![n];
+    let mut canonical = vec![n];
     let mut prev_neigh;
 
     for i in 0..(n-1)  {
         prev_neigh = i;
-        let mut ordered_neighbors : Vec<usize>  = g.neighbors((i as u32).into()).filter(|j| { j.index() > i }).map(|j| { j.index() } ).collect();
+        let mut ordered_neighbors : Vec<usize>  = g.neighbors(g.from_index(i)).filter(|j| { g.to_index(*j) > i }).map(|j| { g.to_index(j) } ).collect();
         ordered_neighbors.sort(); 
         for j in ordered_neighbors {
-            cononical.push(j - prev_neigh);
+            canonical.push(j - prev_neigh);
             prev_neigh = j;
         }
-        cononical.push(n);
+        canonical.push(n);
     }
     
-    return cononical
+    return canonical
 }
 
 //
@@ -211,7 +215,8 @@ fn compute_descriptor(g : &Graph<usize, (), Undirected>) -> Vec<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use petgraph::graph::{UnGraph, NodeIndex};
+    use petgraph::graph::{NodeIndex, UnGraph};
+    use petgraph::{Graph, Undirected};
     use rand::{Rng, thread_rng};
     use rand::seq::SliceRandom;
     use std::collections::HashSet;

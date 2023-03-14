@@ -6,6 +6,9 @@ use std::cmp::Reverse;
 use petgraph::Undirected;
 use petgraph::graph::{NodeIndex, UnGraph, Graph};
 
+use petgraph::visit::EdgeRef;
+use petgraph::visit::{NodeCompactIndexable, IntoNeighbors, IntoEdges};
+
 use std::cmp::Ordering;
 
 /// A `Color` is a subset of graph nodes.
@@ -46,8 +49,10 @@ pub struct Colouring {
 impl Colouring {
     
     /// Create ne new uniform colouring of a graph.
-    pub fn new<N, E>(g : &UnGraph<N, E>) -> Colouring {
-
+    pub fn new<G>(g : G) -> Colouring
+    where 
+        G : NodeCompactIndexable
+    {
         let size = g.node_count();
         let cell_0 = Cell { color: 0, members : HashSet::from_iter(0..size) };
         
@@ -210,7 +215,9 @@ impl Colouring {
     /// 
     /// For more deatails, see https://doi.org/10.1016/j.jsc.2013.09.003
     /// 
-    pub fn refine<N, E>(&mut self, g : &UnGraph<N, E>) -> Vec<usize>
+    pub fn refine<G>(&mut self, g : G) -> Vec<usize>
+    where 
+        G : NodeCompactIndexable + IntoNeighbors
     {
         if self.is_discrete() {
             return vec![];
@@ -259,9 +266,9 @@ impl Colouring {
             {
                 let studied_cell = &self.cells[*self.color_cell.get(&studied_color).unwrap()];
                 for u in studied_cell.members.iter() {
-                    for v in g.neighbors( NodeIndex::new(*u) ) {
-                        degrees.entry(v.index()).and_modify(|counter| *counter += 1).or_insert(1);
-                        visited_cells.insert(self.node_color[v.index()]);
+                    for v in g.neighbors( g.from_index(*u) ) {
+                        degrees.entry( g.to_index(v)  ).and_modify(|counter| *counter += 1).or_insert(1);
+                        visited_cells.insert(self.node_color[g.to_index(v)]);
                     }
                 }
             }
@@ -357,26 +364,28 @@ impl Colouring {
     }
 
     /// Generate the desriptor associated to the colouring
-    pub fn compute_graph_from_discrete(&self, g : &Graph<usize, (), Undirected>) -> Graph<usize, (), Undirected> {
+    pub fn compute_graph_from_discrete<G>(&self, g : G) -> Graph<usize, (), Undirected>
+    where
+        G : NodeCompactIndexable + IntoNeighbors +  IntoEdges
+    {
+        // assert!(self.is_discrete());
 
-        assert!(self.is_discrete());
-
-        let edges : Vec<(usize, usize)> = g.edge_indices()
+        let edges : Vec<(usize, usize)> = g
+            .edge_references()
             .map(|e| { 
-                let (u, v) = g.edge_endpoints(e).unwrap();
-                (self.node_color[u.index()] , self.node_color[v.index()])
+                ( self.node_color[g.to_index(e.source())], self.node_color[g.to_index(e.target())] ) 
             })
             .collect();
         
-        let mut g = UnGraph::<usize, ()>::new_undirected();
+        let mut _g = UnGraph::<usize, ()>::new_undirected();
          
-        g.reserve_nodes(self.size);
-        (0..self.size).for_each(|_| { g.add_node(1); });
+        _g.reserve_nodes(self.size);
+        (0..self.size).for_each(|i| { _g.add_node(i); });
         
-        g.reserve_edges(edges.len());
-        edges.into_iter().for_each(|(u, v)| { g.add_edge(NodeIndex::new(u), NodeIndex::new(v), ()); });
+        _g.reserve_edges(edges.len());
+        edges.into_iter().for_each(|(u, v)| { _g.add_edge(NodeIndex::new(u), NodeIndex::new(v), ()); });
         
-        return g
+        return _g
     }
 }
 

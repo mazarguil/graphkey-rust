@@ -7,15 +7,13 @@ use petgraph::algo::is_isomorphic;
 use graphkey::GraphKey;
 use std::time::Instant;
 
-use std::collections::HashSet;
-
 fn main() {
 
     use std::env;
     env::set_var("RUST_BACKTRACE", "1");
 
     // let g1 = gen_test_graph();
-    let g1 = generate_random_graph(100, 0.1);
+    let g1 = generate_random_graph(4000, 0.1);
     let g2 = generate_permutated_graph(&g1);
 
     let start = Instant::now();
@@ -54,7 +52,7 @@ fn generate_random_graph(n : usize, p : f64) -> Graph::<usize, (), Undirected> {
     let mut rng = rand::thread_rng();
 
     let mut g = UnGraph::<usize, ()>::new_undirected();
-        
+    
     g.reserve_nodes(n); 
     (0..n).for_each(|i| { g.add_node(i); });
     
@@ -105,13 +103,13 @@ fn generate_permutated_graph(g : &Graph::<usize, (), Undirected>) -> Graph::<usi
     })
     .collect();
 
-    let mut g = UnGraph::<usize, ()>::new_undirected();
+    let mut _g = UnGraph::<usize, ()>::new_undirected();
 
-    g.reserve_nodes(n);
-    (0..n).for_each(|_| { g.add_node(1); });
+    _g.reserve_nodes(n);
+    (0..n).for_each(|_| { _g.add_node(1); });
 
-    g.reserve_edges(edges.len());
-    edges.into_iter().for_each(|(u, v)| { g.add_edge(NodeIndex::new(u), NodeIndex::new(v), ()); });
+    _g.reserve_edges(edges.len());
+    edges.into_iter().for_each(|(u, v)| { _g.add_edge(NodeIndex::new(u), NodeIndex::new(v), ()); });
 
-    return g
+    return _g
 }
